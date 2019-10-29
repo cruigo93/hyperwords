@@ -12,15 +12,19 @@ def main():
     
     Options:
         --cds NUM    Context distribution smoothing [default: 1.0]
+        --t NUM    type of pmi (0 - pmi, 1 - bpmi) [default: 0]
     """)
     
     counts_path = args['<counts>']
     vectors_path = args['<output_path>']
+    t = int(args['--t'])
     cds = float(args['--cds'])
     
     counts, iw, ic = read_counts_matrix(counts_path)
-
-    pmi = calc_pmi(counts, cds)
+    if t == 0:
+        pmi = calc_pmi(counts, cds)
+    elif t == 1:
+        pmi = calc_bpmi(counts, cds)
 
     save_matrix(vectors_path, pmi)
     save_vocabulary(vectors_path + '.words.vocab', iw)
@@ -70,20 +74,34 @@ def calc_pmi(counts, cds):
     sum_total = sum_c.sum()
     sum_w = np.reciprocal(sum_w) # going 1 / x
     sum_c = np.reciprocal(sum_c)
-
-    # pmi = csr_matrix(counts)
-
-    # ones = np.ones_like(counts)
     pmi_ones = csr_matrix(counts)
     pmi_ones = multiply_by_rows(pmi_ones, sum_w)
     pmi_ones = multiply_by_columns(pmi_ones, sum_c)
-    pmi = pmi_ones * sum_total #(sum_total > pmi_ones).astype('int') 
-    # pmi = pmi.toarray()
-    # bin_pmi = np.log(pmi)
-    # bin_pmi[bin_pmi <= 0] = 0
-    # bin_pmi[bin_pmi > 0] = 1
+    pmi = pmi_ones * sum_total 
     return pmi
 
+def calc_bpmi(counts, cds):
+    """
+    Calculates e^PMI; PMI without the log().
+    """
+    sum_w = np.array(counts.sum(axis=1))[:, 0]
+    sum_c = np.array(counts.sum(axis=0))[0, :]
+    if cds != 1:
+        sum_c = sum_c ** cds
+    sum_total = sum_c.sum()
+    sum_w = np.reciprocal(sum_w) 
+    sum_c = np.reciprocal(sum_c)
+
+    pmi_ones = csr_matrix(counts)
+    pmi_ones = multiply_by_rows(pmi_ones, sum_w)
+    pmi_ones = multiply_by_columns(pmi_ones, sum_c)
+    pmi = pmi_ones * sum_total 
+    pmi = pmi.toarray()
+    bin_pmi = pmi
+    bin_pmi[bin_pmi <= 0] = 0
+    bin_pmi[bin_pmi > 0] = 1
+    bin_pmi = csr_matrix(bin_pmi)
+    return bin_pmi
 
 def multiply_by_rows(matrix, row_coefs):
     normalizer = dok_matrix((len(row_coefs), len(row_coefs)))

@@ -8,7 +8,6 @@ def create_representation(args):
     neg = int(args['--neg'])
     w_c = args['--w+c']
     eig = float(args['--eig'])
-    k = int(args['--k'])
     
     if rep_type == 'PPMI':
         if w_c:
@@ -20,7 +19,7 @@ def create_representation(args):
         if w_c:
             raise Exception('w+c is not implemented for PPMI.')
         else:
-            return NoExplicit(path, True, k)
+            return NoExplicit(path, True)
 
     elif rep_type == 'BPMI':
         if w_c:
