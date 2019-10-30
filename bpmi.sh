@@ -1,3 +1,5 @@
+wget http://mattmahoney.net/dc/text8.zip
+unzip text8.zip
 CORPUS=text8
 
 scripts/clean_corpus.sh $CORPUS > $CORPUS.clean
